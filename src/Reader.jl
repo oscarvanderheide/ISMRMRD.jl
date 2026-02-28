@@ -126,7 +126,7 @@ end
                   slice      = nothing,
                   contrast   = nothing,
                   repetition = nothing)
-    -> (profiles::Vector{Profile}, xml::String)
+    -> RawAcquisitionData
 
 Read all acquisitions from an ISMRMRD file using a single bulk HDF5 read
 (O(1) HDF5 API calls regardless of the number of acquisitions).
@@ -135,7 +135,11 @@ Filtering by `slice`, `contrast`, or `repetition` is applied in Julia after
 the read. Each filter accepts an integer, any iterable of integers, or
 `nothing` (= keep all).
 
-Returns the profiles and the raw XML parameter string from the file header.
+Returns a `RawAcquisitionData` with fields:
+- `params`  — `Dict{String,Any}` parsed from the ISMRMRD XML header (same
+               keys as MRIReco.jl's `GeneralParameters()`)
+- `profiles` — `Vector{Profile}`
+
 Profile construction is multithreaded; start Julia with multiple threads
 (`julia -t auto`) to exploit this.
 """
@@ -182,6 +186,6 @@ function read_profiles(f::ISMRMRDFile;
         HDF5.API.h5t_close(dtype)
         close(space)
 
-        return profiles, xml_str
+        return RawAcquisitionData(parse_params(xml_str), profiles)
     end
 end
